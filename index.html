@@ -230,12 +230,12 @@ document.getElementById("reportMessage").textContent =
           "사진 제출이 완료되었습니다.";
         fileInput.value = "";
         document.getElementById("photoPreview").classList.add("hidden");
-        renderLists();
-      } catch (error) {
-        photos.pop();
-        document.getElementById("photoMessage").textContent =
-          "저장 공간이 부족합니다. 더 작은 사진을 선택해 주세요.";
-      }
+        renderLiFsts();
+     } catch (error) {
+  photos.pop();
+  document.getElementById("photoMessage").textContent =
+    "사진 저장 실패: " + error.name + " / " + error.message;
+}
     };
     reader.readAsDataURL(file);
   }
