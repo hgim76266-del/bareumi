@@ -274,9 +274,14 @@ document.getElementById("reportMessage").textContent =
 
     const missingPhotoList = document.getElementById("missingPhotoList");
 
-    reportList.replaceChildren();
-    photoList.replaceChildren();
+    if (!reportList || !photoList) {
+  document.getElementById("photoMessage").textContent =
+    "오류: reportList 또는 photoList 요소를 찾을 수 없습니다.";
+  return;
+}
 
+reportList.replaceChildren();
+photoList.replaceChildren();
 if (missingPhotoList) {
   missingPhotoList.replaceChildren();
 
