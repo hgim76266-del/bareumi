@@ -80,7 +80,20 @@
       <h2>📝 자가신고 제출</h2>
       <form id="reportForm">
         <label for="studentNumber">학번</label>
-        <input id="studentNumber" required maxlength="20" placeholder="학번 입력">
+       
+<input
+  id="studentNumber"
+  type="text"
+  inputmode="numeric"
+  pattern="[0-9]{5}"
+  maxlength="5"
+  minlength="5"
+  required
+  placeholder="숫자 5자리 입력"
+  title="학번은 숫자 5자리로 입력해 주세요."
+  oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
+>
+
         <label for="studentName">이름</label>
         <input id="studentName" required maxlength="30" placeholder="이름 입력">
         <button class="full" type="submit">자가신고 제출</button>
