@@ -277,6 +277,32 @@ document.getElementById("reportMessage").textContent =
     reportList.replaceChildren();
     photoList.replaceChildren();
 
+if (missingPhotoList) {
+  missingPhotoList.replaceChildren();
+
+  // 사진 제출이 승인된 학생의 학번만 모으기
+  const photoNumbers = new Set(
+    photos
+      .filter(item => item.status === "제출 완료")
+      .map(item => String(item.number).trim())
+  );
+
+  // 자가신고를 제출했지만 사진 승인이 완료되지 않은 학생
+  const missingStudents = reports.filter(item =>
+    !photoNumbers.has(String(item.number).trim())
+  );
+
+  if (missingStudents.length === 0) {
+    addText(missingPhotoList, "사진 미제출자가 없습니다.");
+  } else {
+    missingStudents.forEach(item => {
+      addText(
+        missingPhotoList,
+        item.number + " · " + item.name + " · 사진 미제출"
+      );
+    });
+  }
+}
     missingPhotoList.replaceChildren();
 
     const photoNumbers = new Set(photos.map(item => item.number));
