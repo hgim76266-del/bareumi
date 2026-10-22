@@ -1,0 +1,295 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>바름이 | 생활체크</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f7f5;
+      color: #263b34;
+    }
+    header {
+      background: #18785c;
+      color: white;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    header h1 { margin: 0 0 8px; font-size: 30px; }
+    header p { margin: 0; }
+    main { max-width: 620px; margin: 24px auto; padding: 0 16px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      background: #18785c;
+      color: white;
+      font-size: 15px;
+    }
+    .tabs button { flex: 1; }
+    .tabs button.active { background: #104d3b; }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 16px;
+      box-shadow: 0 3px 14px #183b3010;
+    }
+    h2 { margin-top: 0; font-size: 21px; }
+    label { display: block; margin: 14px 0 6px; font-weight: bold; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd8d1;
+      border-radius: 9px;
+      font-size: 16px;
+    }
+    .full { width: 100%; margin-top: 16px; }
+    .hidden { display: none; }
+    .notice { color: #66786f; font-size: 13px; line-height: 1.6; }
+    .item {
+      padding: 12px 0;
+      border-bottom: 1px solid #e6eee9;
+      overflow-wrap: anywhere;
+    }
+    .status { color: #18785c; font-weight: bold; }
+    .danger { background: #a13d3d; }
+    img.preview { max-width: 100%; margin-top: 12px; border-radius: 10px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🌿 바름이</h1>
+  <p>우리 학교 생활체크</p>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="active" id="studentTab" onclick="showPage('student')">학생 화면</button>
+    <button id="adminTab" onclick="showPage('admin')">학생회 관리</button>
+  </div>
+
+  <section id="studentPage">
+    <div class="card">
+      <h2>📝 자가신고 제출</h2>
+      <form id="reportForm">
+        <label for="studentNumber">학번</label>
+        <input id="studentNumber" required maxlength="20" placeholder="학번 입력">
+        <label for="studentName">이름</label>
+        <input id="studentName" required maxlength="30" placeholder="이름 입력">
+        <button class="full" type="submit">자가신고 제출</button>
+      </form>
+      <p id="reportMessage" class="status" aria-live="polite"></p>
+    </div>
+
+    <div class="card">
+      <h2>📷 사진 제출</h2>
+      <label for="photoNumber">학번</label>
+      <input id="photoNumber" placeholder="학번 입력">
+      <label for="photoFile">제출할 사진</label>
+      <input id="photoFile" type="file" accept="image/*">
+      <img id="photoPreview" class="preview hidden" alt="사진 미리보기">
+      <button class="full" onclick="submitPhoto()">사진 제출</button>
+      <p id="photoMessage" class="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section id="adminPage" class="hidden">
+    <div class="card" id="loginCard">
+      <h2>🔐 학생회 관리자 로그인</h2>
+      <label for="adminPassword">관리자 비밀번호</label>
+      <input id="adminPassword" type="password" placeholder="비밀번호 입력">
+      <button class="full" onclick="login()">로그인</button>
+      <p id="loginMessage" class="notice"></p>
+    </div>
+
+    <div id="dashboard" class="hidden">
+      <div class="card">
+        <h2>자가신고 제출 명단</h2>
+        <div id="reportList"></div>
+      </div>
+      <div class="card">
+        <h2>사진 검토</h2>
+        <div id="photoList"></div>
+      </div>
+      <button class="danger full" onclick="logout()">로그아웃</button>
+    </div>
+  </section>
+  <p class="notice">현재는 브라우저에 저장되는 시제품입니다. 다른 기기와 데이터가 공유되지는 않습니다.</p>
+</main>
+
+<script>
+  // 시제품용 관리자 비밀번호입니다.
+  // 공개 웹사이트에서는 이 방식으로 실제 보안을 제공할 수 없습니다.
+  const ADMIN_PASSWORD = "1234";
+  const REPORT_KEY = "bareumi_reports";
+  const PHOTO_KEY = "bareumi_photos";
+
+  let reports = JSON.parse(localStorage.getItem(REPORT_KEY) || "[]");
+  let photos = JSON.parse(localStorage.getItem(PHOTO_KEY) || "[]");
+  let loggedIn = false;
+
+  function saveData() {
+    localStorage.setItem(REPORT_KEY, JSON.stringify(reports));
+    localStorage.setItem(PHOTO_KEY, JSON.stringify(photos));
+  }
+
+  function showPage(page) {
+    document.getElementById("studentPage").classList.toggle("hidden", page !== "student");
+    document.getElementById("adminPage").classList.toggle("hidden", page !== "admin");
+    document.getElementById("studentTab").classList.toggle("active", page === "student");
+    document.getElementById("adminTab").classList.toggle("active", page === "admin");
+  }
+
+  document.getElementById("reportForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+    const number = document.getElementById("studentNumber").value.trim();
+    const name = document.getElementById("studentName").value.trim();
+
+    if (!number || !name) return;
+
+    reports = reports.filter(item => item.number !== number);
+    reports.push({ number, name, date: new Date().toLocaleString("ko-KR") });
+    saveData();
+
+    document.getElementById("reportMessage").textContent =
+      name + " 학생, 자가신고 제출이 완료되었습니다.";
+    this.reset();
+    renderLists();
+  });
+
+  document.getElementById("photoFile").addEventListener("change", function() {
+    const file = this.files[0];
+    const preview = document.getElementById("photoPreview");
+    if (!file) {
+      preview.classList.add("hidden");
+      return;
+    }
+    if (file.size > 700 * 1024) {
+      document.getElementById("photoMessage").textContent =
+        "사진은 700KB 이하 파일을 선택해 주세요.";
+      this.value = "";
+      preview.classList.add("hidden");
+      return;
+    }
+    preview.src = URL.createObjectURL(file);
+    preview.classList.remove("hidden");
+  });
+
+  function submitPhoto() {
+    const number = document.getElementById("photoNumber").value.trim();
+    const fileInput = document.getElementById("photoFile");
+    const file = fileInput.files[0];
+
+    if (!number || !file) {
+      document.getElementById("photoMessage").textContent =
+        "학번과 사진을 모두 입력해 주세요.";
+      return;
+    }
+    if (file.size > 700 * 1024) {
+      document.getElementById("photoMessage").textContent =
+        "사진은 700KB 이하 파일을 선택해 주세요.";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function() {
+      photos = photos.filter(item => item.number !== number);
+      photos.push({
+        number,
+        image: reader.result,
+        status: "검토 대기",
+        date: new Date().toLocaleString("ko-KR")
+      });
+      try {
+        saveData();
+        document.getElementById("photoMessage").textContent =
+          "사진 제출이 완료되었습니다.";
+        fileInput.value = "";
+        document.getElementById("photoPreview").classList.add("hidden");
+        renderLists();
+      } catch (error) {
+        photos.pop();
+        document.getElementById("photoMessage").textContent =
+          "저장 공간이 부족합니다. 더 작은 사진을 선택해 주세요.";
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function login() {
+    const password = document.getElementById("adminPassword").value;
+    if (password === ADMIN_PASSWORD) {
+      loggedIn = true;
+      document.getElementById("loginCard").classList.add("hidden");
+      document.getElementById("dashboard").classList.remove("hidden");
+      renderLists();
+    } else {
+      document.getElementById("loginMessage").textContent =
+        "비밀번호가 올바르지 않습니다.";
+    }
+  }
+
+  function logout() {
+    loggedIn = false;
+    document.getElementById("loginCard").classList.remove("hidden");
+    document.getElementById("dashboard").classList.add("hidden");
+    document.getElementById("adminPassword").value = "";
+  }
+
+  function addText(parent, text) {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.textContent = text;
+    parent.appendChild(div);
+  }
+
+  function renderLists() {
+    const reportList = document.getElementById("reportList");
+    const photoList = document.getElementById("photoList");
+    reportList.replaceChildren();
+    photoList.replaceChildren();
+
+    if (!reports.length) addText(reportList, "아직 제출한 학생이 없습니다.");
+
+    reports.forEach(item => {
+      addText(reportList, item.number + " · " + item.name + " · 제출 완료 · " + item.date);
+    });
+
+    if (!photos.length) addText(photoList, "검토할 사진이 없습니다.");
+
+    photos.forEach((item, index) => {
+      const div = document.createElement("div");
+      div.className = "item";
+      const title = document.createElement("p");
+      title.textContent = item.number + " · " + item.status + " · " + item.date;
+      div.appendChild(title);
+
+      const img = document.createElement("img");
+      img.src = item.image;
+      img.alt = "제출된 사진";
+      img.className = "preview";
+      div.appendChild(img);
+
+      if (item.status === "검토 대기") {
+        const accept = document.createElement("button");
+        accept.textContent = "수락";
+        accept.onclick = function() {
+          photos[index].status = "제출 완료";
+          saveData();
+          renderLists();
+        };
+        div.appendChild(accept);
+      }
+      photoList.appendChild(div);
+    });
+  }
+</script>
+</body>
+</html>
