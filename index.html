@@ -191,13 +191,7 @@ document.getElementById("reportMessage").textContent =
       preview.classList.add("hidden");
       return;
     }
-    if (file.size > 700 * 1024) {
-      document.getElementById("photoMessage").textContent =
-        "사진은 700KB 이하 파일을 선택해 주세요.";
-      this.value = "";
-      preview.classList.add("hidden");
-      return;
-    }
+  
     preview.src = URL.createObjectURL(file);
     preview.classList.remove("hidden");
   });
