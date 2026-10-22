@@ -171,8 +171,10 @@
     reports.push({ number, name, date: new Date().toLocaleString("ko-KR") });
     saveData();
 
-    document.getElementById("reportMessage").textContent =
-      name + " 학생, 자가신고 제출이 완료되었습니다.";
+    
+document.getElementById("reportMessage").textContent =
+  number + " " + name + " 학생, 자가신고 제출이 완료되었습니다.";
+
     this.reset();
     renderLists();
   });
