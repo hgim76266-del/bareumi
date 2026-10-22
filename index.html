@@ -123,10 +123,15 @@
     </div>
 
     <div id="dashboard" class="hidden">
+     
       <div class="card">
-        <h2>자가신고 제출 명단</h2>
-        <div id="reportList"></div>
+        <h2>📋 사진 미제출자 명단</h2>
+        <p class="notice">
+          자가신고는 제출했지만 사진을 첨부하지 않은 학생입니다.
+        </p>
+        <div id="missingPhotoList"></div>
       </div>
+
       <div class="card">
         <h2>사진 검토</h2>
         <div id="photoList"></div>
@@ -216,12 +221,15 @@ document.getElementById("reportMessage").textContent =
     const reader = new FileReader();
     reader.onload = function() {
       photos = photos.filter(item => item.number !== number);
-      photos.push({
-        number,
-        image: reader.result,
-        status: "검토 대기",
-        date: new Date().toLocaleString("ko-KR")
-      });
+      
+        photos.push({
+          number,
+          image: reader.result,
+          status: "검토 대기",
+          date: new Date().toLocaleString("ko-KR"),
+          timestamp: Date.now()
+        });
+
       try {
         saveData();
         document.getElementById("photoMessage").textContent =
@@ -266,10 +274,32 @@ document.getElementById("reportMessage").textContent =
   }
 
   function renderLists() {
+    
     const reportList = document.getElementById("reportList");
     const photoList = document.getElementById("photoList");
+
+    const missingPhotoList = document.getElementById("missingPhotoList");
+
     reportList.replaceChildren();
     photoList.replaceChildren();
+
+    missingPhotoList.replaceChildren();
+
+    const photoNumbers = new Set(photos.map(item => item.number));
+    const missingStudents = reports.filter(
+      item => !photoNumbers.has(item.number)
+    );
+
+    if (!missingStudents.length) {
+      addText(missingPhotoList, "사진 미제출자가 없습니다.");
+    } else {
+      missingStudents.forEach(item => {
+        addText(
+          missingPhotoList,
+          item.number + " · " + item.name + " · 사진 미제출"
+        );
+      });
+    }
 
     if (!reports.length) addText(reportList, "아직 제출한 학생이 없습니다.");
 
@@ -279,7 +309,12 @@ document.getElementById("reportMessage").textContent =
 
     if (!photos.length) addText(photoList, "검토할 사진이 없습니다.");
 
-    photos.forEach((item, index) => {
+    
+    [...photos]
+      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+      .forEach(item => {
+        const index = photos.indexOf(item);
+
       const div = document.createElement("div");
       div.className = "item";
       const title = document.createElement("p");
